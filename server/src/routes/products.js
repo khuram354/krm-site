@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
-const { protect, authorize } = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth"); // 👈 YEH LINE HONI CHAHIYE
 
 // @route   GET /api/products
 // @desc    Get all products
@@ -55,7 +55,8 @@ router.get("/:id", async (req, res) => {
 // @route   POST /api/products
 // @desc    Create a new product (Admin only)
 // @access  Private/Admin
-router.post("/", async (req, res) => {
+router.post("/", protect, authorize("admin"), async (req, res) => {
+    // 👈 YEH LINE MEIN protect, authorize HONA CHAHIYE
     try {
         const { name, slug, description, price, category, stock } = req.body;
 
