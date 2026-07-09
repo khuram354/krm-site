@@ -19,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ Routes - Middleware ke BAAD aana chahiye
 app.use("/api/auth", require("./server/src/routes/auth"));
+app.use("/api/products", require("./server/src/routes/products"));
 
 // Test route
 app.get("/", (req, res) => {
