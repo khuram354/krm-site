@@ -12,10 +12,13 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// ✅ Middleware - Ye pehle aana chahiye
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // 👈 Ye important hai!
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ Routes - Middleware ke BAAD aana chahiye
+app.use("/api/auth", require("./server/src/routes/auth"));
 
 // Test route
 app.get("/", (req, res) => {
