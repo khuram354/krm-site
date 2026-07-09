@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
+const { protect, authorize } = require("../middleware/auth");
 
 // @route   GET /api/products
 // @desc    Get all products
