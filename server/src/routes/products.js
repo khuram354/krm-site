@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
-const { protect, authorize } = require("../middleware/auth"); // 👈 YEH LINE HONI CHAHIYE
+const { protect, authorize } = require("../middleware/auth");
+const upload = require("../middleware/upload"); // 👈 NAYA IMPORT
 
 // @route   GET /api/products
 // @desc    Get all products
@@ -53,43 +54,55 @@ router.get("/:id", async (req, res) => {
 });
 
 // @route   POST /api/products
-// @desc    Create a new product (Admin only)
+// @desc    Create a new product with images (Admin only)
 // @access  Private/Admin
-router.post("/", protect, authorize("admin"), async (req, res) => {
-    // 👈 YEH LINE MEIN protect, authorize HONA CHAHIYE
-    try {
-        const { name, slug, description, price, category, stock } = req.body;
+router.post(
+    "/",
+    protect,
+    authorize("admin"),
+    upload.array("images", 5),
+    async (req, res) => {
+        try {
+            const { name, slug, description, price, category, stock } =
+                req.body;
 
-        // Check if product exists
-        const existingProduct = await Product.findOne({ slug });
-        if (existingProduct) {
-            return res.status(400).json({
+            // Check if product exists
+            const existingProduct = await Product.findOne({ slug });
+            if (existingProduct) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Product with this slug already exists",
+                });
+            }
+
+            // Get uploaded image paths
+            const images = req.files
+                ? req.files.map((file) => `/uploads/${file.filename}`)
+                : [];
+
+            const product = await Product.create({
+                name,
+                slug,
+                description,
+                price,
+                category,
+                stock,
+                images, // 👈 Images save ho rahi hain
+            });
+
+            res.status(201).json({
+                success: true,
+                product,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({
                 success: false,
-                message: "Product with this slug already exists",
+                message: "Server Error",
+                error: error.message,
             });
         }
-
-        const product = await Product.create({
-            name,
-            slug,
-            description,
-            price,
-            category,
-            stock,
-        });
-
-        res.status(201).json({
-            success: true,
-            product,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: "Server Error",
-            error: error.message,
-        });
-    }
-});
+    },
+);
 
 module.exports = router;

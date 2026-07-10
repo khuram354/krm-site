@@ -54,7 +54,7 @@
           <h2 class="fw-bold">
             <i class="fas fa-box me-2"></i>Products
           </h2>
-          <button class="btn btn-primary" onclick="showAddProduct()">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
             <i class="fas fa-plus me-2"></i>Add Product
           </button>
         </div>
@@ -88,6 +88,68 @@
           </div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- ========== ADD PRODUCT MODAL ========== -->
+  <div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-plus-circle me-2"></i>Add New Product
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addProductForm" enctype="multipart/form-data">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="pName">Product Name *</label>
+                <input type="text" class="form-control" id="pName" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="pSlug">Slug *</label>
+                <input type="text" class="form-control" id="pSlug" readonly>
+                <small class="text-muted">Auto-generated from product name</small>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="pDescription">Description *</label>
+              <textarea class="form-control" id="pDescription" rows="3" required></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="pPrice">Price ($) *</label>
+                <input type="number" class="form-control" id="pPrice" required>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="pCategory">Category *</label>
+                <select class="form-select" id="pCategory" required>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Books">Books</option>
+                  <option value="Home">Home</option>
+                  <option value="Beauty">Beauty</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="pStock">Stock *</label>
+                <input type="number" class="form-control" id="pStock" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="pImage">Product Image</label>
+              <input type="file" class="form-control" id="pImage" accept="image/*">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-plus me-2"></i>Add Product
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -39,10 +39,11 @@ async function loadProducts() {
 
 // ===== 2. DISPLAY PRODUCTS =====
 function displayProducts(products) {
-    if (!productContainer) {
-        console.error("Product container not found");
-        return;
-    }
+    if (!productContainer) return;
+
+    const noImage =
+        "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect width=%22300%22 height=%22200%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E";
+
     if (products.length === 0) {
         productContainer.innerHTML = `
             <div class="col-12 text-center py-5">
@@ -59,9 +60,9 @@ function displayProducts(products) {
             (product) => `
         <div class="col-md-3 col-sm-6">
             <div class="product-card">
-                <img src="${product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/300x200?text=No+Image"}" 
+                <img src="${product.images && product.images.length > 0 ? "http://localhost:5000" + product.images[0] : noImage}" 
                      alt="${product.name}"
-                     onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                     onerror="this.src='${noImage}'">
                 <h5 class="card-title">${product.name}</h5>
                 <p class="text-muted small">${product.category || "Uncategorized"}</p>
                 <div class="price">$${product.price.toFixed(2)}</div>

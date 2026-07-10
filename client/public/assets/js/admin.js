@@ -62,6 +62,9 @@ async function loadProducts() {
         const tbody = document.getElementById("productsTableBody");
         if (!tbody) return;
 
+        const noImage =
+            "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect width=%2250%22 height=%2250%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3ENo%3C/text%3E%3C/svg%3E";
+
         if (!data.success || data.products.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -79,7 +82,7 @@ async function loadProducts() {
                 (product) => `
             <tr>
                 <td>
-                    <img src="${product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/50"}" 
+                    <img src="${product.images && product.images.length > 0 ? "http://localhost:5000" + product.images[0] : noImage}" 
                          alt="${product.name}"
                          style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                 </td>
@@ -249,3 +252,66 @@ window.deleteUser = function (id) {
     if (!confirm("Are you sure you want to delete this user?")) return;
     alert("Delete user: " + id);
 };
+
+// ===== ADD PRODUCT (With Image) =====
+document
+    .getElementById("addProductForm")
+    ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("Please login first");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("name", document.getElementById("pName").value);
+        formData.append("slug", document.getElementById("pSlug").value);
+        formData.append(
+            "description",
+            document.getElementById("pDescription").value,
+        );
+        formData.append("price", document.getElementById("pPrice").value);
+        formData.append("category", document.getElementById("pCategory").value);
+        formData.append("stock", document.getElementById("pStock").value);
+
+        const imageFile = document.getElementById("pImage").files[0];
+        if (imageFile) {
+            formData.append("images", imageFile);
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/products`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert("✅ Product added successfully!");
+                bootstrap.Modal.getInstance(
+                    document.getElementById("addProductModal"),
+                ).hide();
+                document.getElementById("addProductForm").reset();
+                loadProducts();
+            } else {
+                alert("❌ " + (data.message || "Failed to add product"));
+            }
+        } catch (error) {
+            console.error("Error adding product:", error);
+            alert("❌ Network error. Please try again.");
+        }
+    });
+// ===== AUTO-GENERATE SLUG FROM NAME =====
+document.getElementById("pName")?.addEventListener("input", function () {
+    const slug = this.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    document.getElementById("pSlug").value = slug;
+});
