@@ -382,3 +382,100 @@ document.getElementById("pName")?.addEventListener("input", function () {
         .replace(/^-+|-+$/g, "");
     document.getElementById("pSlug").value = slug;
 });
+
+// ===== EDIT PRODUCT - Load Data =====
+window.editProduct = async function (id) {
+    try {
+        const response = await fetch(`${API_URL}/products/${id}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const product = data.product;
+            document.getElementById("editProductId").value = product._id;
+            document.getElementById("editName").value = product.name;
+            document.getElementById("editSlug").value = product.slug;
+            document.getElementById("editDescription").value =
+                product.description;
+            document.getElementById("editPrice").value = product.price;
+            document.getElementById("editCategory").value = product.category;
+            document.getElementById("editStock").value = product.stock;
+
+            // Show modal
+            const modal = new bootstrap.Modal(
+                document.getElementById("editProductModal"),
+            );
+            modal.show();
+        }
+    } catch (error) {
+        console.error("Error loading product:", error);
+        alert("Failed to load product data");
+    }
+};
+
+// ===== EDIT PRODUCT - Auto Slug =====
+document.getElementById("editName")?.addEventListener("input", function () {
+    const slug = this.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    document.getElementById("editSlug").value = slug;
+});
+
+// ===== EDIT PRODUCT - Submit =====
+document
+    .getElementById("editProductForm")
+    ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("Please login first");
+            return;
+        }
+
+        const id = document.getElementById("editProductId").value;
+        const formData = new FormData();
+        formData.append("name", document.getElementById("editName").value);
+        formData.append("slug", document.getElementById("editSlug").value);
+        formData.append(
+            "description",
+            document.getElementById("editDescription").value,
+        );
+        formData.append("price", document.getElementById("editPrice").value);
+        formData.append(
+            "category",
+            document.getElementById("editCategory").value,
+        );
+        formData.append("stock", document.getElementById("editStock").value);
+
+        const imageFile = document.getElementById("editImage").files[0];
+        if (imageFile) {
+            formData.append("images", imageFile);
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/products/${id}`, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert("✅ Product updated successfully!");
+                bootstrap.Modal.getInstance(
+                    document.getElementById("editProductModal"),
+                ).hide();
+                document.getElementById("editProductForm").reset();
+                loadProducts(adminCurrentPage);
+            } else {
+                alert("❌ " + (data.message || "Failed to update product"));
+            }
+        } catch (error) {
+            console.error("Error updating product:", error);
+            alert("❌ Network error. Please try again.");
+        }
+    });

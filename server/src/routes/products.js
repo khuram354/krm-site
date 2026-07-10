@@ -171,4 +171,64 @@ router.post(
     },
 );
 
+// @route   PUT /api/products/:id
+// @desc    Update a product (Admin only)
+// @access  Private/Admin
+router.put(
+    "/:id",
+    protect,
+    authorize("admin"),
+    upload.array("images", 5),
+    async (req, res) => {
+        try {
+            let product = await Product.findById(req.params.id);
+
+            if (!product) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Product not found",
+                });
+            }
+
+            const { name, slug, description, price, category, stock } =
+                req.body;
+
+            // Build update object
+            const updateData = {
+                name,
+                slug,
+                description,
+                price,
+                category,
+                stock,
+            };
+
+            // If new images uploaded
+            if (req.files && req.files.length > 0) {
+                updateData.images = req.files.map(
+                    (file) => `/uploads/${file.filename}`,
+                );
+            }
+
+            product = await Product.findByIdAndUpdate(
+                req.params.id,
+                updateData,
+                { new: true, runValidators: true },
+            );
+
+            res.json({
+                success: true,
+                product,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({
+                success: false,
+                message: "Server Error",
+                error: error.message,
+            });
+        }
+    },
+);
+
 module.exports = router;

@@ -153,6 +153,70 @@
     </div>
   </div>
 
+  <!-- ========== EDIT PRODUCT MODAL ========== -->
+  <div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-edit me-2"></i>Edit Product
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editProductForm" enctype="multipart/form-data">
+            <input type="hidden" id="editProductId">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="editName">Product Name *</label>
+                <input type="text" class="form-control" id="editName" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="editSlug">Slug *</label>
+                <input type="text" class="form-control" id="editSlug" readonly>
+                <small class="text-muted">Auto-generated from name</small>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="editDescription">Description *</label>
+              <textarea class="form-control" id="editDescription" rows="3" required></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="editPrice">Price ($) *</label>
+                <input type="number" class="form-control" id="editPrice" required>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="editCategory">Category *</label>
+                <select class="form-select" id="editCategory" required>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Books">Books</option>
+                  <option value="Home">Home</option>
+                  <option value="Beauty">Beauty</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="editStock">Stock *</label>
+                <input type="number" class="form-control" id="editStock" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="editImage">New Image (optional)</label>
+              <input type="file" class="form-control" id="editImage" accept="image/*">
+              <small class="text-muted">Leave empty to keep current image</small>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-save me-2"></i>Update Product
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/js/admin.js"></script>
 </body>
