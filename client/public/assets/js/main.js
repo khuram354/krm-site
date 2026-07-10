@@ -14,20 +14,27 @@ if (!cartCount) {
 // ===== LOAD PRODUCTS ON PAGE LOAD =====
 document.addEventListener("DOMContentLoaded", () => {
     if (productContainer) {
-        loadProducts();
+        loadProducts(1);
     }
     updateCartCount();
     checkAuthStatus();
 });
 
 // ===== 1. LOAD ALL PRODUCTS =====
-async function loadProducts() {
+let currentPage = 1;
+const productsPerPage = 8;
+
+async function loadProducts(page = 1) {
     try {
-        const response = await fetch(`${API_URL}/products`);
+        currentPage = page;
+        const response = await fetch(
+            `${API_URL}/products?page=${page}&limit=${productsPerPage}`,
+        );
         const data = await response.json();
 
         if (data.success) {
             displayProducts(data.products);
+            displayPagination(data.pagination);
         } else {
             showError("Failed to load products");
         }
@@ -35,6 +42,60 @@ async function loadProducts() {
         console.error("Error loading products:", error);
         showError("Network error. Please try again.");
     }
+}
+
+// ===== DISPLAY PAGINATION =====
+function displayPagination(pagination) {
+    const { total, page, pages } = pagination;
+
+    // Remove old pagination if exists
+    const oldPagination = document.getElementById("paginationContainer");
+    if (oldPagination) oldPagination.remove();
+
+    if (pages <= 1) return;
+
+    // Create pagination container
+    const container = document.createElement("div");
+    container.id = "paginationContainer";
+    container.className = "d-flex justify-content-center mt-4";
+
+    let paginationHTML = `<ul class="pagination">`;
+
+    // Previous button
+    paginationHTML += `
+        <li class="page-item ${page === 1 ? "disabled" : ""}">
+            <button class="page-link" onclick="loadProducts(${page - 1})">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </li>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= pages; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === page ? "active" : ""}">
+                <button class="page-link" onclick="loadProducts(${i})">${i}</button>
+            </li>
+        `;
+    }
+
+    // Next button
+    paginationHTML += `
+        <li class="page-item ${page === pages ? "disabled" : ""}">
+            <button class="page-link" onclick="loadProducts(${page + 1})">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </li>
+    `;
+
+    paginationHTML += `</ul>`;
+    container.innerHTML = paginationHTML;
+
+    // Insert after product container
+    productContainer.parentNode.insertBefore(
+        container,
+        productContainer.nextSibling,
+    );
 }
 
 // ===== 2. DISPLAY PRODUCTS =====

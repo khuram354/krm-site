@@ -9,15 +9,29 @@ const upload = require("../middleware/upload");
 // ============================================
 
 // @route   GET /api/products
-// @desc    Get all products
+// @desc    Get all products with pagination
 // @access  Public
 router.get("/", async (req, res) => {
     try {
-        const products = await Product.find();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const skip = (page - 1) * limit;
+
+        const total = await Product.countDocuments();
+        const products = await Product.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
         res.json({
             success: true,
-            count: products.length,
             products,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit),
+            },
         });
     } catch (error) {
         console.error(error);
