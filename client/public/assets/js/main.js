@@ -264,3 +264,65 @@ function showError(message) {
         </div>
     `;
 }
+
+// ===== 12. SEARCH & FILTER PRODUCTS =====
+async function searchProducts() {
+    const keyword = document.getElementById("searchInput")?.value || "";
+    const category = document.getElementById("categoryFilter")?.value || "";
+    const sort = document.getElementById("sortFilter")?.value || "newest";
+
+    // Build query string
+    const params = new URLSearchParams();
+    if (keyword) params.append("keyword", keyword);
+    if (category) params.append("category", category);
+    if (sort) params.append("sort", sort);
+
+    try {
+        const response = await fetch(
+            `${API_URL}/products/search?${params.toString()}`,
+        );
+        const data = await response.json();
+
+        if (data.success) {
+            displayProducts(data.products);
+        } else {
+            showError("No products found");
+        }
+    } catch (error) {
+        console.error("Search error:", error);
+        showError("Network error. Please try again.");
+    }
+}
+
+// ===== 13. CLEAR FILTERS =====
+function clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("categoryFilter").value = "";
+    document.getElementById("sortFilter").value = "newest";
+    loadProducts(); // Reset to all products
+}
+
+// ===== EVENT LISTENERS =====
+document.addEventListener("DOMContentLoaded", () => {
+    loadProducts();
+    updateCartCount();
+    checkAuthStatus();
+
+    // Search on input change (with debounce)
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(searchProducts, 300);
+        });
+    }
+
+    // Filter on change
+    document
+        .getElementById("categoryFilter")
+        ?.addEventListener("change", searchProducts);
+    document
+        .getElementById("sortFilter")
+        ?.addEventListener("change", searchProducts);
+});

@@ -78,13 +78,43 @@
         <hr class="w-25 mx-auto">
       </div>
 
-      <div class="row g-4" id="productContainer">
-        <!-- Products will be loaded here by JavaScript -->
-        <div class="col-12 text-center py-5">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+      <!-- 👇 SEARCH & FILTER BAR (NAYA) -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-5">
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Search products...">
           </div>
         </div>
+        <div class="col-md-3">
+          <select class="form-select" id="categoryFilter">
+            <option value="">All Categories</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Books">Books</option>
+            <option value="Home">Home</option>
+            <option value="Beauty">Beauty</option>
+            <option value="Sports">Sports</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" id="sortFilter">
+            <option value="newest">Newest</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-danger w-100" onclick="clearFilters()">
+            <i class="fas fa-times me-1"></i>Clear
+          </button>
+        </div>
+      </div>
+      <!-- 👆 SEARCH & FILTER BAR END -->
+
+      <div class="row g-4" id="productContainer">
+        <!-- Products will be loaded here by JavaScript -->
       </div>
     </div>
   </section>

@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 const { protect, authorize } = require("../middleware/auth");
-const upload = require("../middleware/upload"); // 👈 NAYA IMPORT
+const upload = require("../middleware/upload");
+
+// ============================================
+// ✅ PUBLIC ROUTES (PEHLE)
+// ============================================
 
 // @route   GET /api/products
 // @desc    Get all products
@@ -25,7 +29,53 @@ router.get("/", async (req, res) => {
     }
 });
 
-// @route   GET /api/products/:id
+// @route   GET /api/products/search  👈 SEARCH ROUTE PEHLE AANA CHAHIYE
+// @desc    Search products with filters
+// @access  Public
+router.get("/search", async (req, res) => {
+    try {
+        const { keyword, category, sort } = req.query;
+
+        // Build query
+        const query = {};
+
+        // Keyword search
+        if (keyword && keyword.trim() !== "") {
+            query.$or = [
+                { name: { $regex: keyword.trim(), $options: "i" } },
+                { description: { $regex: keyword.trim(), $options: "i" } },
+            ];
+        }
+
+        // Category filter
+        if (category && category.trim() !== "") {
+            query.category = category.trim();
+        }
+
+        // Sort
+        let sortOption = {};
+        if (sort === "price-asc") sortOption = { price: 1 };
+        else if (sort === "price-desc") sortOption = { price: -1 };
+        else sortOption = { createdAt: -1 };
+
+        const products = await Product.find(query).sort(sortOption);
+
+        res.json({
+            success: true,
+            count: products.length,
+            products,
+        });
+    } catch (error) {
+        console.error("Search Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+});
+
+// @route   GET /api/products/:id  👈 ID ROUTE SEARCH KE BAAD AANA CHAHIYE
 // @desc    Get single product by ID
 // @access  Public
 router.get("/:id", async (req, res) => {
@@ -53,6 +103,10 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+// ============================================
+// ✅ ADMIN ROUTES (BAAD MEIN)
+// ============================================
+
 // @route   POST /api/products
 // @desc    Create a new product with images (Admin only)
 // @access  Private/Admin
@@ -66,7 +120,6 @@ router.post(
             const { name, slug, description, price, category, stock } =
                 req.body;
 
-            // Check if product exists
             const existingProduct = await Product.findOne({ slug });
             if (existingProduct) {
                 return res.status(400).json({
@@ -75,7 +128,6 @@ router.post(
                 });
             }
 
-            // Get uploaded image paths
             const images = req.files
                 ? req.files.map((file) => `/uploads/${file.filename}`)
                 : [];
@@ -87,7 +139,7 @@ router.post(
                 price,
                 category,
                 stock,
-                images, // 👈 Images save ho rahi hain
+                images,
             });
 
             res.status(201).json({
