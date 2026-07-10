@@ -161,12 +161,11 @@ window.removeFromCart = function (productId) {
 };
 
 // ===== 5. CHECKOUT =====
-window.checkout = function () {
+window.checkout = async function () {
     const token = localStorage.getItem("token");
 
     if (!token) {
         showToast("Please login to checkout! 🔐", "error");
-        // Show login modal
         const loginModal = new bootstrap.Modal(
             document.getElementById("loginModal"),
         );
@@ -174,18 +173,69 @@ window.checkout = function () {
         return;
     }
 
-    // Get cart items
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     if (cart.length === 0) {
         showToast("Your cart is empty! 🛒", "error");
         return;
     }
 
-    // Show checkout message (will implement order creation later)
-    showToast("Order placed successfully! 🎉");
-    localStorage.removeItem("cart");
-    updateCartCount();
-    loadCart();
+    try {
+        // Get product details for each cart item
+        const productPromises = cart.map((item) =>
+            fetch(`${API_URL}/products/${item.id}`).then((res) => res.json()),
+        );
+        const productResponses = await Promise.all(productPromises);
+        const products = productResponses.map((res) => res.product);
+
+        // Prepare order items
+        const orderItems = cart.map((item, index) => ({
+            product: item.id,
+            name: products[index].name,
+            price: products[index].price,
+            quantity: item.quantity,
+        }));
+
+        // Calculate total
+        let total = 0;
+        orderItems.forEach((item) => {
+            total += item.price * item.quantity;
+        });
+
+        // Create order
+        const response = await fetch(`${API_URL}/orders`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                items: orderItems,
+                total: total + 5, // Shipping
+                shippingAddress: {
+                    street: "123 Main St",
+                    city: "Karachi",
+                    state: "Sindh",
+                    zip: "12345",
+                    country: "Pakistan",
+                },
+                paymentMethod: "credit_card",
+            }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast("Order placed successfully! 🎉");
+            localStorage.removeItem("cart");
+            updateCartCount();
+            loadCart();
+        } else {
+            showToast(data.message || "Order failed", "error");
+        }
+    } catch (error) {
+        console.error("Checkout error:", error);
+        showToast("Network error. Please try again.", "error");
+    }
 };
 
 // ===== 6. SHOW TOAST NOTIFICATION =====
