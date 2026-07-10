@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (path.includes("dashboard.html")) {
         loadDashboard();
     } else if (path.includes("products.html")) {
-        loadProducts();
+        loadProducts(1);
     } else if (path.includes("orders.html")) {
         loadOrders();
     } else if (path.includes("users.html")) {
@@ -54,9 +54,15 @@ async function loadDashboard() {
 }
 
 // ===== PRODUCTS (Admin) =====
-async function loadProducts() {
+let adminCurrentPage = 1;
+const adminProductsPerPage = 5;
+
+async function loadProducts(page = 1) {
     try {
-        const response = await fetch(`${API_URL}/products`);
+        adminCurrentPage = page;
+        const response = await fetch(
+            `${API_URL}/products?page=${page}&limit=${adminProductsPerPage}`,
+        );
         const data = await response.json();
 
         const tbody = document.getElementById("productsTableBody");
@@ -74,6 +80,9 @@ async function loadProducts() {
                     </td>
                 </tr>
             `;
+            // Remove old pagination
+            const oldPagination = document.getElementById("adminPagination");
+            if (oldPagination) oldPagination.remove();
             return;
         }
 
@@ -102,11 +111,69 @@ async function loadProducts() {
         `,
             )
             .join("");
+
+        // Display pagination
+        displayAdminPagination(data.pagination);
     } catch (error) {
         console.error("Error loading products:", error);
     }
 }
 
+// ===== ADMIN PAGINATION =====
+function displayAdminPagination(pagination) {
+    const { total, page, pages } = pagination;
+
+    // Remove old pagination
+    const oldPagination = document.getElementById("adminPagination");
+    if (oldPagination) oldPagination.remove();
+
+    if (pages <= 1) return;
+
+    // Find the table container
+    const tableContainer = document.querySelector(".card-body");
+    if (!tableContainer) return;
+
+    const container = document.createElement("div");
+    container.id = "adminPagination";
+    container.className =
+        "d-flex justify-content-between align-items-center mt-3";
+
+    let paginationHTML = `
+        <span class="text-muted small">Showing ${(page - 1) * pagination.limit + 1} - ${Math.min(page * pagination.limit, total)} of ${total} products</span>
+        <ul class="pagination pagination-sm mb-0">
+    `;
+
+    // Previous button
+    paginationHTML += `
+        <li class="page-item ${page === 1 ? "disabled" : ""}">
+            <button class="page-link" onclick="loadProducts(${page - 1})">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </li>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= pages; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === page ? "active" : ""}">
+                <button class="page-link" onclick="loadProducts(${i})">${i}</button>
+            </li>
+        `;
+    }
+
+    // Next button
+    paginationHTML += `
+        <li class="page-item ${page === pages ? "disabled" : ""}">
+            <button class="page-link" onclick="loadProducts(${page + 1})">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </li>
+    `;
+
+    paginationHTML += `</ul>`;
+    container.innerHTML = paginationHTML;
+    tableContainer.appendChild(container);
+}
 // ===== ORDERS =====
 async function loadOrders() {
     try {
@@ -228,7 +295,7 @@ window.deleteProduct = async function (id) {
 
         if (data.success) {
             alert("Product deleted successfully!");
-            loadProducts();
+            loadProducts(adminCurrentPage);
         } else {
             alert(data.message || "Failed to delete product");
         }
