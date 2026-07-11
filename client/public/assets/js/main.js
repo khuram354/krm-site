@@ -53,7 +53,8 @@ function displayPagination(pagination) {
     if (oldPagination) oldPagination.remove();
 
     if (pages <= 1) return;
-    // 👇 CHECK: productContainer exists
+
+    // Check: productContainer exists
     if (!productContainer) {
         console.warn("Product container not found");
         return;
@@ -96,12 +97,7 @@ function displayPagination(pagination) {
     paginationHTML += `</ul>`;
     container.innerHTML = paginationHTML;
 
-    // Insert after product container
-    productContainer.parentNode.insertBefore(
-        container,
-        productContainer.nextSibling,
-    );
-    // 👇 CHECK: parentNode exists
+    // ✅ Insert after product container (SIRF EK BAAR)
     if (productContainer.parentNode) {
         productContainer.parentNode.insertBefore(
             container,

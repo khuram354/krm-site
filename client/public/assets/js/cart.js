@@ -27,9 +27,10 @@ async function loadCart() {
     }
 
     try {
-        // Get product details for each cart item
         const productPromises = cart.map((item) =>
-            fetch(`${API_URL}/products/${item.id}`).then((res) => res.json()),
+            fetch(`http://localhost:5000/api/products/${item.id}`).then((res) =>
+                res.json(),
+            ),
         );
 
         const productResponses = await Promise.all(productPromises);
@@ -65,7 +66,7 @@ function displayCartItems(products, cart) {
         itemsHTML += `
             <div class="row align-items-center border-bottom py-3" id="cart-item-${product._id}">
                 <div class="col-md-3 col-12 text-center text-md-start">
-                    <img src="${product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/100x100?text=No+Image"}" 
+                    <img src="${product.images && product.images.length > 0 ? "http://localhost:5000" + product.images[0] : "https://via.placeholder.com/100x100?text=No+Image"}" 
                          alt="${product.name}"
                          class="img-fluid rounded"
                          style="max-height: 100px; object-fit: contain;">
@@ -98,11 +99,10 @@ function displayCartItems(products, cart) {
         `;
     });
 
-    // Checkout Section
+    // Cart Summary
     cartContainer.innerHTML = `
         ${itemsHTML}
         
-        <!-- Cart Summary -->
         <div class="row mt-4">
             <div class="col-md-6 offset-md-6">
                 <div class="card shadow-sm">
@@ -115,7 +115,7 @@ function displayCartItems(products, cart) {
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Shipping</span>
-                            <span>${total > 0 ? "$5.00" : "$0.00"}</span>
+                            <span>${total > 0 ? "Rs. 5.00" : "Rs. 0.00"}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between fw-bold fs-5">
@@ -146,7 +146,7 @@ window.updateQuantity = function (productId, change) {
 
         localStorage.setItem("cart", JSON.stringify(cart));
         updateCartCount();
-        loadCart(); // Reload cart display
+        loadCart();
     }
 };
 
@@ -156,7 +156,7 @@ window.removeFromCart = function (productId) {
     cart = cart.filter((item) => item.id !== productId);
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
-    loadCart(); // Reload cart display
+    loadCart();
     showToast("Item removed from cart! 🗑️");
 };
 
@@ -180,14 +180,14 @@ window.checkout = async function () {
     }
 
     try {
-        // Get product details for each cart item
         const productPromises = cart.map((item) =>
-            fetch(`${API_URL}/products/${item.id}`).then((res) => res.json()),
+            fetch(`http://localhost:5000/api/products/${item.id}`).then((res) =>
+                res.json(),
+            ),
         );
         const productResponses = await Promise.all(productPromises);
         const products = productResponses.map((res) => res.product);
 
-        // Prepare order items
         const orderItems = cart.map((item, index) => ({
             product: item.id,
             name: products[index].name,
@@ -195,14 +195,12 @@ window.checkout = async function () {
             quantity: item.quantity,
         }));
 
-        // Calculate total
         let total = 0;
         orderItems.forEach((item) => {
             total += item.price * item.quantity;
         });
 
-        // Create order
-        const response = await fetch(`${API_URL}/orders`, {
+        const response = await fetch(`http://localhost:5000/api/orders`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -210,7 +208,7 @@ window.checkout = async function () {
             },
             body: JSON.stringify({
                 items: orderItems,
-                total: total + 5, // Shipping
+                total: total + 5,
                 shippingAddress: {
                     street: "123 Main St",
                     city: "Karachi",
