@@ -97,6 +97,7 @@ async function loadProducts(page = 1) {
                 </td>
                 <td>${product.name}</td>
                 <td>$${product.price.toFixed(2)}</td>
+                <td>${product.numReviews || 0}</td>
                 <td><span class="badge bg-${product.stock > 10 ? "success" : product.stock > 0 ? "warning" : "danger"}">${product.stock}</span></td>
                 <td>${product.category || "Uncategorized"}</td>
                 <td>

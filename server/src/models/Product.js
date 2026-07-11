@@ -57,28 +57,10 @@ const ProductSchema = new mongoose.Schema(
             default: 0,
         },
         numReviews: {
+            // 👈 NAYA FIELD
             type: Number,
             default: 0,
         },
-        reviews: [
-            {
-                user: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "User",
-                },
-                name: String,
-                rating: {
-                    type: Number,
-                    min: 1,
-                    max: 5,
-                },
-                comment: String,
-                createdAt: {
-                    type: Date,
-                    default: Date.now,
-                },
-            },
-        ],
         createdAt: {
             type: Date,
             default: Date.now,

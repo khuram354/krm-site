@@ -53,6 +53,11 @@ function displayPagination(pagination) {
     if (oldPagination) oldPagination.remove();
 
     if (pages <= 1) return;
+    // 👇 CHECK: productContainer exists
+    if (!productContainer) {
+        console.warn("Product container not found");
+        return;
+    }
 
     // Create pagination container
     const container = document.createElement("div");
@@ -96,6 +101,13 @@ function displayPagination(pagination) {
         container,
         productContainer.nextSibling,
     );
+    // 👇 CHECK: parentNode exists
+    if (productContainer.parentNode) {
+        productContainer.parentNode.insertBefore(
+            container,
+            productContainer.nextSibling,
+        );
+    }
 }
 
 // ===== 2. DISPLAY PRODUCTS =====
@@ -119,20 +131,28 @@ function displayProducts(products) {
     productContainer.innerHTML = products
         .map(
             (product) => `
-        <div class="col-md-3 col-sm-6">
-            <div class="product-card">
+    <div class="col-md-3 col-sm-6">
+        <div class="product-card">
+            <a href="product.html?id=${product._id}" class="text-decoration-none text-dark">
                 <img src="${product.images && product.images.length > 0 ? "http://localhost:5000" + product.images[0] : noImage}" 
                      alt="${product.name}"
                      onerror="this.src='${noImage}'">
                 <h5 class="card-title">${product.name}</h5>
                 <p class="text-muted small">${product.category || "Uncategorized"}</p>
                 <div class="price">$${product.price.toFixed(2)}</div>
-                <button class="btn btn-primary" onclick="addToCart('${product._id}')">
-                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
-                </button>
-            </div>
+                <!-- 👇 REVIEWS COUNT SHOW KAREIN -->
+                <div class="small text-muted mt-1">
+                    <i class="fas fa-star text-warning"></i>
+                    ${product.ratings ? product.ratings.toFixed(1) : "0"} 
+                    (${product.numReviews || 0} reviews)
+                </div>
+            </a>
+            <button class="btn btn-primary mt-2" onclick="addToCart('${product._id}')">
+                <i class="fas fa-cart-plus me-2"></i>Add to Cart
+            </button>
         </div>
-    `,
+    </div>
+`,
         )
         .join("");
 }
