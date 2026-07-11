@@ -193,7 +193,6 @@ router.put(
             const { name, slug, description, price, category, stock } =
                 req.body;
 
-            // Build update object
             const updateData = {
                 name,
                 slug,
@@ -203,7 +202,6 @@ router.put(
                 stock,
             };
 
-            // If new images uploaded
             if (req.files && req.files.length > 0) {
                 updateData.images = req.files.map(
                     (file) => `/uploads/${file.filename}`,
@@ -213,7 +211,7 @@ router.put(
             product = await Product.findByIdAndUpdate(
                 req.params.id,
                 updateData,
-                { new: true, runValidators: true },
+                { returnDocument: "after", runValidators: true }, // 👈 YEH CHANGE KAREIN
             );
 
             res.json({
@@ -230,5 +228,60 @@ router.put(
         }
     },
 );
+
+// @route   DELETE /api/products/:id
+// @desc    Delete a product (Admin only)
+// @access  Private/Admin
+router.delete("/:id", protect, authorize("admin"), async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found",
+            });
+        }
+
+        // 👇 CONDITION 1: Check stock
+        if (product.stock > 0) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Cannot delete product. Stock is available. Please set stock to 0 first.",
+            });
+        }
+
+        // 👇 CONDITION 2: Check if product is in any ACTIVE order (pending/processing)
+        const Order = require("../models/Order");
+        const inActiveOrder = await Order.findOne({
+            "items.product": req.params.id,
+            status: { $in: ["pending", "processing"] },
+        });
+
+        if (inActiveOrder) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Cannot delete product. It is in an active order (pending/processing).",
+            });
+        }
+
+        // ✅ All conditions passed - Delete the product
+        await product.deleteOne();
+
+        res.json({
+            success: true,
+            message: "Product deleted successfully",
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+});
 
 module.exports = router;

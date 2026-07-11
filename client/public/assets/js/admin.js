@@ -280,30 +280,79 @@ window.editProduct = function (id) {
     alert("Edit product: " + id);
 };
 
-window.deleteProduct = async function (id) {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+// ===== DELETE PRODUCT - Show Confirmation Modal =====
+let productToDelete = null;
 
-    try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${API_URL}/products/${id}`, {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
+window.deleteProduct = function (id) {
+    // Fetch product name first
+    fetch(`${API_URL}/products/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.success) {
+                productToDelete = id;
+                document.getElementById("deleteProductName").textContent =
+                    `"${data.product.name}"`;
+                const modal = new bootstrap.Modal(
+                    document.getElementById("deleteProductModal"),
+                );
+                modal.show();
+            }
+        })
+        .catch((err) => {
+            console.error("Error fetching product:", err);
+            alert("Failed to load product details");
         });
-        const data = await response.json();
-
-        if (data.success) {
-            alert("Product deleted successfully!");
-            loadProducts(adminCurrentPage);
-        } else {
-            alert(data.message || "Failed to delete product");
-        }
-    } catch (error) {
-        console.error("Error deleting product:", error);
-        alert("Network error");
-    }
 };
+
+// ===== CONFIRM DELETE =====
+document
+    .getElementById("confirmDeleteBtn")
+    ?.addEventListener("click", async function () {
+        if (!productToDelete) return;
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("Please login first");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `${API_URL}/products/${productToDelete}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                },
+            );
+
+            const data = await response.json();
+
+            // Close modal
+            bootstrap.Modal.getInstance(
+                document.getElementById("deleteProductModal"),
+            ).hide();
+
+            if (data.success) {
+                alert("✅ Product deleted successfully!");
+                productToDelete = null;
+                loadProducts(adminCurrentPage);
+            } else {
+                alert("❌ " + (data.message || "Failed to delete product"));
+            }
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            alert("❌ Network error. Please try again.");
+        }
+    });
+
+// ===== RESET deleteProductToDelete when modal is closed =====
+document
+    .getElementById("deleteProductModal")
+    ?.addEventListener("hidden.bs.modal", function () {
+        productToDelete = null;
+    });
 
 window.showAddProduct = function () {
     alert("Add product form will open here");
