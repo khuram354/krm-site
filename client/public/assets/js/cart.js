@@ -75,7 +75,7 @@ function displayCartItems(products, cart) {
                     <p class="text-muted small">${product.category || "Uncategorized"}</p>
                 </div>
                 <div class="col-md-2 col-12">
-                    <p class="fw-bold">$${product.price.toFixed(2)}</p>
+                    <p class="fw-bold">Rs. ${product.price.toFixed(2)}</p>
                 </div>
                 <div class="col-md-2 col-12">
                     <div class="d-flex align-items-center">
@@ -89,7 +89,7 @@ function displayCartItems(products, cart) {
                     </div>
                 </div>
                 <div class="col-md-2 col-12 text-end">
-                    <p class="fw-bold text-primary">$${itemTotal.toFixed(2)}</p>
+                    <p class="fw-bold text-primary">Rs. ${itemTotal.toFixed(2)}</p>
                     <button class="btn btn-danger btn-sm" onclick="removeFromCart('${product._id}')">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -111,7 +111,7 @@ function displayCartItems(products, cart) {
                         <hr>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal</span>
-                            <span>$${total.toFixed(2)}</span>
+                            <span>Rs. ${total.toFixed(2)}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Shipping</span>
@@ -120,7 +120,7 @@ function displayCartItems(products, cart) {
                         <hr>
                         <div class="d-flex justify-content-between fw-bold fs-5">
                             <span>Total</span>
-                            <span>$${(total + (total > 0 ? 5 : 0)).toFixed(2)}</span>
+                            <span>Rs. ${(total + (total > 0 ? 5 : 0)).toFixed(2)}</span>
                         </div>
                         <button class="btn btn-primary w-100 mt-3" onclick="checkout()" ${total === 0 ? "disabled" : ""}>
                             <i class="fas fa-credit-card me-2"></i>Proceed to Checkout

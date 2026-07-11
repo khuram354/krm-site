@@ -45,7 +45,7 @@ function displayProductDetail(product) {
                     <!-- 👇 REVIEWS COUNT SHOW KAREIN -->
                     <span class="ms-2">(${product.numReviews || 0} reviews)</span>
                 </div>
-                <h3 class="text-primary">$${product.price.toFixed(2)}</h3>
+                <h3 class="text-primary">Rs. ${product.price.toFixed(2)}</h3>
                 <p class="mt-3">${product.description}</p>
                 <p><strong>Stock:</strong> ${product.stock > 0 ? "In Stock" : "Out of Stock"}</p>
                 <button class="btn btn-primary btn-lg" onclick="addToCart('${product._id}')">

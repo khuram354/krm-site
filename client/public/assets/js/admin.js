@@ -96,7 +96,7 @@ async function loadProducts(page = 1) {
                          style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                 </td>
                 <td>${product.name}</td>
-                <td>$${product.price.toFixed(2)}</td>
+                <td>Rs. ${product.price.toFixed(2)}</td>
                 <td>${product.numReviews || 0}</td>
                 <td><span class="badge bg-${product.stock > 10 ? "success" : product.stock > 0 ? "warning" : "danger"}">${product.stock}</span></td>
                 <td>${product.category || "Uncategorized"}</td>
@@ -189,6 +189,10 @@ async function loadOrders() {
         const tbody = document.getElementById("ordersTableBody");
         if (!tbody) return;
 
+        if (data.success && data.orders) {
+            updateOrderStats(data.orders);
+        }
+
         if (!data.success || data.orders?.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -207,17 +211,21 @@ async function loadOrders() {
             <tr>
                 <td>#${order._id.slice(-6)}</td>
                 <td>${order.user?.name || "Guest"}</td>
-                <td>$${order.total?.toFixed(2) || "0.00"}</td>
+                <td>Rs. ${order.total?.toFixed(2) || "0.00"}</td>
                 <td>
-                    <span class="badge bg-${order.status === "completed" ? "success" : order.status === "pending" ? "warning" : "danger"}">
+                    <span class="badge bg-${order.status === "completed" ? "success" : order.status === "processing" ? "info" : order.status === "cancelled" ? "danger" : "warning"}">
                         ${order.status || "pending"}
                     </span>
                 </td>
-                <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+                <td>${formatDate(order.createdAt)}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="viewOrder('${order._id}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
+                    <!-- 👇 id AND name ADDED -->
+                    <select class="form-select form-select-sm" id="status-${order._id}" name="status-${order._id}" onchange="updateOrderStatus('${order._id}', this.value)">
+                        <option value="pending" ${order.status === "pending" ? "selected" : ""}>Pending</option>
+                        <option value="processing" ${order.status === "processing" ? "selected" : ""}>Processing</option>
+                        <option value="completed" ${order.status === "completed" ? "selected" : ""}>Completed</option>
+                        <option value="cancelled" ${order.status === "cancelled" ? "selected" : ""}>Cancelled</option>
+                    </select>
                 </td>
             </tr>
         `,
@@ -226,6 +234,21 @@ async function loadOrders() {
     } catch (error) {
         console.error("Error loading orders:", error);
     }
+}
+
+// ===== UPDATE ORDER STATS =====
+function updateOrderStats(orders) {
+    const total = orders.length;
+    const completed = orders.filter((o) => o.status === "completed").length;
+    const pending = orders.filter((o) => o.status === "pending").length;
+    const processing = orders.filter((o) => o.status === "processing").length;
+    const cancelled = orders.filter((o) => o.status === "cancelled").length;
+
+    document.getElementById("totalOrders").textContent = total;
+    document.getElementById("completedOrders").textContent = completed;
+    document.getElementById("pendingOrders").textContent = pending;
+    document.getElementById("processingOrders").textContent = processing;
+    document.getElementById("cancelledOrders").textContent = cancelled;
 }
 
 // ===== USERS =====
@@ -529,3 +552,77 @@ document
             alert("❌ Network error. Please try again.");
         }
     });
+
+// ===== UPDATE ORDER STATUS =====
+window.updateOrderStatus = async function (orderId, status) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        alert("Please login first");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Show success message
+            showToast(`Order status updated to ${status}`, "success");
+            // Reload orders
+            loadOrders();
+        } else {
+            alert("❌ " + (data.message || "Failed to update order status"));
+        }
+    } catch (error) {
+        console.error("Error updating order status:", error);
+        alert("❌ Network error. Please try again.");
+    }
+};
+
+// ===== SHOW TOAST NOTIFICATION =====
+function showToast(message, type = "success") {
+    const toastContainer =
+        document.getElementById("toastContainer") || createToastContainer();
+
+    const toast = document.createElement("div");
+    toast.className = `toast show align-items-center text-white bg-${type === "error" ? "danger" : "success"} border-0`;
+    toast.role = "alert";
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// ===== CREATE TOAST CONTAINER =====
+function createToastContainer() {
+    const container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "toast-container";
+    document.body.appendChild(container);
+    return container;
+}
+
+// ===== FORMAT DATE (DD-MM-YYYY) =====
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}

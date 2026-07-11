@@ -75,4 +75,97 @@ router.post("/", protect, async (req, res) => {
     }
 });
 
+// @route   PUT /api/orders/:id/status
+// @desc    Update order status (Admin only)
+// @access  Private/Admin
+router.put("/:id/status", protect, authorize("admin"), async (req, res) => {
+    try {
+        const { status } = req.body;
+
+        // Valid status values
+        const validStatuses = [
+            "pending",
+            "processing",
+            "completed",
+            "cancelled",
+        ];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status value",
+            });
+        }
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found",
+            });
+        }
+
+        order.status = status;
+        await order.save();
+
+        res.json({
+            success: true,
+            order,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+});
+
+// @route   PUT /api/orders/:id/status
+// @desc    Update order status (Admin only)
+// @access  Private/Admin
+router.put("/:id/status", protect, authorize("admin"), async (req, res) => {
+    try {
+        const { status } = req.body;
+
+        const validStatuses = [
+            "pending",
+            "processing",
+            "completed",
+            "cancelled",
+        ];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status value",
+            });
+        }
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found",
+            });
+        }
+
+        order.status = status;
+        await order.save();
+
+        res.json({
+            success: true,
+            order,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+});
+
 module.exports = router;

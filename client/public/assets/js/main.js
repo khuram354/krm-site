@@ -139,7 +139,7 @@ function displayProducts(products) {
                      onerror="this.src='${noImage}'">
                 <h5 class="card-title">${product.name}</h5>
                 <p class="text-muted small">${product.category || "Uncategorized"}</p>
-                <div class="price">$${product.price.toFixed(2)}</div>
+                <div class="price">Rs. ${product.price.toFixed(2)}</div>
                 <!-- 👇 REVIEWS COUNT SHOW KAREIN -->
                 <div class="small text-muted mt-1">
                     <i class="fas fa-star text-warning"></i>
