@@ -27,6 +27,7 @@ app.use("/api/products", require("./server/src/routes/products"));
 app.use("/api/users", require("./server/src/routes/users"));
 app.use("/api/orders", require("./server/src/routes/orders"));
 app.use("/api/reviews", require("./server/src/routes/reviews"));
+app.use("/api/dashboard", require("./server/src/routes/dashboard"));
 
 // Test route
 app.get("/", (req, res) => {

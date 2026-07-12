@@ -40,28 +40,79 @@ async function loadDashboard() {
     try {
         const token = localStorage.getItem("token");
 
-        // Get products count
-        const productsRes = await fetch(`${API_URL}/products`);
-        const productsData = await productsRes.json();
+        const response = await fetch(`${API_URL}/dashboard/stats`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            console.error("Failed to load dashboard:", data.message);
+            return;
+        }
+
+        const stats = data.data;
+
+        // Update stats cards
+        document.getElementById("totalRevenue").textContent =
+            `Rs. ${stats.totalRevenue.toFixed(2)}`;
+        document.getElementById("totalOrders").textContent = stats.totalOrders;
         document.getElementById("totalProducts").textContent =
-            productsData.count || 0;
+            stats.totalProducts;
+        document.getElementById("totalUsers").textContent = stats.totalUsers;
 
-        // Get orders (will implement later)
-        document.getElementById("totalOrders").textContent = "0";
-        document.getElementById("totalUsers").textContent = "0";
-        document.getElementById("totalRevenue").textContent = "$0";
+        // Render recent orders
+        renderRecentOrders(stats.recentOrders);
 
-        // Recent orders placeholder
+        // Render charts
+        renderSalesChart(stats.monthlySales);
+        renderStatusChart(stats.statusDistribution);
+    } catch (error) {
+        console.error("Error loading dashboard:", error);
         document.getElementById("recentOrders").innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-danger py-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Failed to load dashboard data
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// ===== RENDER RECENT ORDERS =====
+function renderRecentOrders(orders) {
+    const container = document.getElementById("recentOrders");
+
+    if (!orders || orders.length === 0) {
+        container.innerHTML = `
             <tr>
                 <td colspan="5" class="text-center text-muted py-3">
                     <i class="fas fa-box me-2"></i>No recent orders
                 </td>
             </tr>
         `;
-    } catch (error) {
-        console.error("Error loading dashboard:", error);
+        return;
     }
+
+    container.innerHTML = orders
+        .map(
+            (order) => `
+        <tr>
+            <td>#${order._id.slice(-6)}</td>
+            <td>${order.user?.name || "Guest"}</td>
+            <td>Rs. ${order.total.toFixed(2)}</td>
+            <td>
+                <span class="badge bg-${order.status === "completed" ? "success" : order.status === "processing" ? "info" : order.status === "cancelled" ? "danger" : "warning"}">
+                    ${order.status || "pending"}
+                </span>
+            </td>
+            <td>${formatDate(order.createdAt)}</td>
+        </tr>
+    `,
+        )
+        .join("");
 }
 
 // ===== PRODUCTS (Admin) =====
@@ -707,4 +758,148 @@ function formatDate(dateString) {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
+}
+
+// ===== RENDER SALES CHART =====
+function renderSalesChart(monthlySales) {
+    const ctx = document.getElementById("salesChart");
+    if (!ctx) return;
+
+    // Destroy existing chart if any
+    if (window.salesChartInstance) {
+        window.salesChartInstance.destroy();
+    }
+
+    // Prepare data
+    const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ];
+    const labels = [];
+    const data = [];
+
+    if (monthlySales && monthlySales.length > 0) {
+        monthlySales.forEach((item) => {
+            labels.push(`${months[item._id.month - 1]} ${item._id.year}`);
+            data.push(item.total);
+        });
+    } else {
+        // Default empty data
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            labels.push(`${months[d.getMonth()]} ${d.getFullYear()}`);
+            data.push(0);
+        }
+    }
+
+    window.salesChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: "Sales (Rs.)",
+                    data: data,
+                    backgroundColor: "rgba(13, 110, 253, 0.6)",
+                    borderColor: "rgba(13, 110, 253, 1)",
+                    borderWidth: 2,
+                    borderRadius: 4,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            return "Rs. " + value;
+                        },
+                    },
+                },
+            },
+        },
+    });
+}
+
+// ===== RENDER STATUS CHART =====
+function renderStatusChart(statusDistribution) {
+    const ctx = document.getElementById("statusChart");
+    if (!ctx) return;
+
+    // Destroy existing chart if any
+    if (window.statusChartInstance) {
+        window.statusChartInstance.destroy();
+    }
+
+    const colors = {
+        pending: "#ffc107",
+        processing: "#0dcaf0",
+        completed: "#198754",
+        cancelled: "#dc3545",
+    };
+
+    const labels = [];
+    const data = [];
+    const backgroundColors = [];
+
+    if (statusDistribution && statusDistribution.length > 0) {
+        statusDistribution.forEach((item) => {
+            labels.push(item._id || "unknown");
+            data.push(item.count);
+            backgroundColors.push(colors[item._id] || "#6c757d");
+        });
+    } else {
+        // Default empty data
+        labels.push("No Orders");
+        data.push(1);
+        backgroundColors.push("#6c757d");
+    }
+
+    window.statusChartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 2,
+                    borderColor: "#fff",
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: "circle",
+                    },
+                },
+            },
+        },
+    });
 }
