@@ -22,6 +22,17 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (path.includes("users.html")) {
         loadUsers();
     }
+
+    // Search on input
+    document
+        .getElementById("adminSearchInput")
+        ?.addEventListener("input", filterAdminProducts);
+    document
+        .getElementById("adminCategoryFilter")
+        ?.addEventListener("change", filterAdminProducts);
+    document
+        .getElementById("adminStockFilter")
+        ?.addEventListener("change", filterAdminProducts);
 });
 
 // ===== DASHBOARD =====
@@ -56,12 +67,26 @@ async function loadDashboard() {
 // ===== PRODUCTS (Admin) =====
 let adminCurrentPage = 1;
 const adminProductsPerPage = 5;
+let adminSearchKeyword = "";
+let adminCategoryFilter = "";
+let adminStockFilter = "";
 
 async function loadProducts(page = 1) {
     try {
         adminCurrentPage = page;
+
+        // Build query string with filters
+        const params = new URLSearchParams();
+        params.append("page", page);
+        params.append("limit", adminProductsPerPage);
+        if (adminSearchKeyword) params.append("keyword", adminSearchKeyword);
+        if (adminCategoryFilter) params.append("category", adminCategoryFilter);
+        if (adminStockFilter === "instock") params.append("minStock", "1");
+        if (adminStockFilter === "outofstock") params.append("maxStock", "0");
+        if (adminStockFilter === "lowstock") params.append("maxStock", "10");
+
         const response = await fetch(
-            `${API_URL}/products?page=${page}&limit=${adminProductsPerPage}`,
+            `${API_URL}/products?${params.toString()}`,
         );
         const data = await response.json();
 
@@ -80,7 +105,6 @@ async function loadProducts(page = 1) {
                     </td>
                 </tr>
             `;
-            // Remove old pagination
             const oldPagination = document.getElementById("adminPagination");
             if (oldPagination) oldPagination.remove();
             return;
@@ -91,14 +115,35 @@ async function loadProducts(page = 1) {
                 (product) => `
             <tr>
                 <td>
-                    <img src="${product.images && product.images.length > 0 ? "http://localhost:5000" + product.images[0] : noImage}" 
+                    <img src="${
+                        product.images && product.images.length > 0
+                            ? "http://localhost:5000" + product.images[0]
+                            : noImage
+                    }" 
                          alt="${product.name}"
                          style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                 </td>
                 <td>${product.name}</td>
                 <td>Rs. ${product.price.toFixed(2)}</td>
                 <td>${product.numReviews || 0}</td>
-                <td><span class="badge bg-${product.stock > 10 ? "success" : product.stock > 0 ? "warning" : "danger"}">${product.stock}</span></td>
+                <td>
+                    <span class="badge bg-${
+                        product.stock > 10
+                            ? "success"
+                            : product.stock > 0
+                              ? "warning"
+                              : "danger"
+                    }">
+                        ${
+                            product.stock > 10
+                                ? "✅ In Stock"
+                                : product.stock > 0
+                                  ? "⚠️ Low Stock"
+                                  : "❌ Out of Stock"
+                        }
+                    </span>
+                    <span class="d-block small text-muted">${product.stock} units</span>
+                </td>
                 <td>${product.category || "Uncategorized"}</td>
                 <td>
                     <button class="btn btn-sm btn-primary" onclick="editProduct('${product._id}')">
@@ -113,7 +158,6 @@ async function loadProducts(page = 1) {
             )
             .join("");
 
-        // Display pagination
         displayAdminPagination(data.pagination);
     } catch (error) {
         console.error("Error loading products:", error);
@@ -124,13 +168,11 @@ async function loadProducts(page = 1) {
 function displayAdminPagination(pagination) {
     const { total, page, pages } = pagination;
 
-    // Remove old pagination
     const oldPagination = document.getElementById("adminPagination");
     if (oldPagination) oldPagination.remove();
 
     if (pages <= 1) return;
 
-    // Find the table container
     const tableContainer = document.querySelector(".card-body");
     if (!tableContainer) return;
 
@@ -140,11 +182,13 @@ function displayAdminPagination(pagination) {
         "d-flex justify-content-between align-items-center mt-3";
 
     let paginationHTML = `
-        <span class="text-muted small">Showing ${(page - 1) * pagination.limit + 1} - ${Math.min(page * pagination.limit, total)} of ${total} products</span>
+        <span class="text-muted small">Showing ${(page - 1) * pagination.limit + 1} - ${Math.min(
+            page * pagination.limit,
+            total,
+        )} of ${total} products</span>
         <ul class="pagination pagination-sm mb-0">
     `;
 
-    // Previous button
     paginationHTML += `
         <li class="page-item ${page === 1 ? "disabled" : ""}">
             <button class="page-link" onclick="loadProducts(${page - 1})">
@@ -153,7 +197,6 @@ function displayAdminPagination(pagination) {
         </li>
     `;
 
-    // Page numbers
     for (let i = 1; i <= pages; i++) {
         paginationHTML += `
             <li class="page-item ${i === page ? "active" : ""}">
@@ -162,7 +205,6 @@ function displayAdminPagination(pagination) {
         `;
     }
 
-    // Next button
     paginationHTML += `
         <li class="page-item ${page === pages ? "disabled" : ""}">
             <button class="page-link" onclick="loadProducts(${page + 1})">
@@ -175,6 +217,27 @@ function displayAdminPagination(pagination) {
     container.innerHTML = paginationHTML;
     tableContainer.appendChild(container);
 }
+
+// ===== FILTER FUNCTIONS =====
+function filterAdminProducts() {
+    adminSearchKeyword =
+        document.getElementById("adminSearchInput")?.value || "";
+    adminCategoryFilter =
+        document.getElementById("adminCategoryFilter")?.value || "";
+    adminStockFilter = document.getElementById("adminStockFilter")?.value || "";
+    loadProducts(1);
+}
+
+function clearAdminFilters() {
+    document.getElementById("adminSearchInput").value = "";
+    document.getElementById("adminCategoryFilter").value = "";
+    document.getElementById("adminStockFilter").value = "";
+    adminSearchKeyword = "";
+    adminCategoryFilter = "";
+    adminStockFilter = "";
+    loadProducts(1);
+}
+
 // ===== ORDERS =====
 async function loadOrders() {
     try {
@@ -213,18 +276,37 @@ async function loadOrders() {
                 <td>${order.user?.name || "Guest"}</td>
                 <td>Rs. ${order.total?.toFixed(2) || "0.00"}</td>
                 <td>
-                    <span class="badge bg-${order.status === "completed" ? "success" : order.status === "processing" ? "info" : order.status === "cancelled" ? "danger" : "warning"}">
+                    <span class="badge bg-${
+                        order.status === "completed"
+                            ? "success"
+                            : order.status === "processing"
+                              ? "info"
+                              : order.status === "cancelled"
+                                ? "danger"
+                                : "warning"
+                    }">
                         ${order.status || "pending"}
                     </span>
                 </td>
                 <td>${formatDate(order.createdAt)}</td>
                 <td>
-                    <!-- 👇 id AND name ADDED -->
-                    <select class="form-select form-select-sm" id="status-${order._id}" name="status-${order._id}" onchange="updateOrderStatus('${order._id}', this.value)">
-                        <option value="pending" ${order.status === "pending" ? "selected" : ""}>Pending</option>
-                        <option value="processing" ${order.status === "processing" ? "selected" : ""}>Processing</option>
-                        <option value="completed" ${order.status === "completed" ? "selected" : ""}>Completed</option>
-                        <option value="cancelled" ${order.status === "cancelled" ? "selected" : ""}>Cancelled</option>
+                    <select class="form-select form-select-sm" id="status-${
+                        order._id
+                    }" name="status-${order._id}" onchange="updateOrderStatus('${
+                        order._id
+                    }', this.value)">
+                        <option value="pending" ${
+                            order.status === "pending" ? "selected" : ""
+                        }>Pending</option>
+                        <option value="processing" ${
+                            order.status === "processing" ? "selected" : ""
+                        }>Processing</option>
+                        <option value="completed" ${
+                            order.status === "completed" ? "selected" : ""
+                        }>Completed</option>
+                        <option value="cancelled" ${
+                            order.status === "cancelled" ? "selected" : ""
+                        }>Cancelled</option>
                     </select>
                 </td>
             </tr>
@@ -283,7 +365,9 @@ async function loadUsers() {
             <tr>
                 <td>${user.name}</td>
                 <td>${user.email}</td>
-                <td><span class="badge bg-${user.role === "admin" ? "warning" : "secondary"}">${user.role}</span></td>
+                <td><span class="badge bg-${
+                    user.role === "admin" ? "warning" : "secondary"
+                }">${user.role}</span></td>
                 <td>${new Date(user.createdAt).toLocaleDateString()}</td>
                 <td>
                     <button class="btn btn-sm btn-danger" onclick="deleteUser('${user._id}')">
@@ -301,14 +385,38 @@ async function loadUsers() {
 
 // ===== PRODUCT ACTIONS =====
 window.editProduct = function (id) {
-    alert("Edit product: " + id);
+    // Load product data in edit modal
+    fetch(`${API_URL}/products/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.success) {
+                const product = data.product;
+                document.getElementById("editProductId").value = product._id;
+                document.getElementById("editName").value = product.name;
+                document.getElementById("editSlug").value = product.slug;
+                document.getElementById("editDescription").value =
+                    product.description;
+                document.getElementById("editPrice").value = product.price;
+                document.getElementById("editCategory").value =
+                    product.category;
+                document.getElementById("editStock").value = product.stock;
+
+                const modal = new bootstrap.Modal(
+                    document.getElementById("editProductModal"),
+                );
+                modal.show();
+            }
+        })
+        .catch((err) => {
+            console.error("Error loading product:", err);
+            alert("Failed to load product data");
+        });
 };
 
 // ===== DELETE PRODUCT - Show Confirmation Modal =====
 let productToDelete = null;
 
 window.deleteProduct = function (id) {
-    // Fetch product name first
     fetch(`${API_URL}/products/${id}`)
         .then((res) => res.json())
         .then((data) => {
@@ -353,7 +461,6 @@ document
 
             const data = await response.json();
 
-            // Close modal
             bootstrap.Modal.getInstance(
                 document.getElementById("deleteProductModal"),
             ).hide();
@@ -371,27 +478,28 @@ document
         }
     });
 
-// ===== RESET deleteProductToDelete when modal is closed =====
 document
     .getElementById("deleteProductModal")
     ?.addEventListener("hidden.bs.modal", function () {
         productToDelete = null;
     });
 
+// ===== SHOW ADD PRODUCT =====
 window.showAddProduct = function () {
-    alert("Add product form will open here");
+    const modal = new bootstrap.Modal(
+        document.getElementById("addProductModal"),
+    );
+    modal.show();
 };
 
-// ===== ORDER ACTIONS =====
-window.viewOrder = function (id) {
-    alert("View order: " + id);
-};
-
-// ===== USER ACTIONS =====
-window.deleteUser = function (id) {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    alert("Delete user: " + id);
-};
+// ===== AUTO-GENERATE SLUG FROM NAME =====
+document.getElementById("pName")?.addEventListener("input", function () {
+    const slug = this.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    document.getElementById("pSlug").value = slug;
+});
 
 // ===== ADD PRODUCT (With Image) =====
 document
@@ -438,7 +546,7 @@ document
                     document.getElementById("addProductModal"),
                 ).hide();
                 document.getElementById("addProductForm").reset();
-                loadProducts();
+                loadProducts(adminCurrentPage);
             } else {
                 alert("❌ " + (data.message || "Failed to add product"));
             }
@@ -447,43 +555,6 @@ document
             alert("❌ Network error. Please try again.");
         }
     });
-// ===== AUTO-GENERATE SLUG FROM NAME =====
-document.getElementById("pName")?.addEventListener("input", function () {
-    const slug = this.value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-    document.getElementById("pSlug").value = slug;
-});
-
-// ===== EDIT PRODUCT - Load Data =====
-window.editProduct = async function (id) {
-    try {
-        const response = await fetch(`${API_URL}/products/${id}`);
-        const data = await response.json();
-
-        if (data.success) {
-            const product = data.product;
-            document.getElementById("editProductId").value = product._id;
-            document.getElementById("editName").value = product.name;
-            document.getElementById("editSlug").value = product.slug;
-            document.getElementById("editDescription").value =
-                product.description;
-            document.getElementById("editPrice").value = product.price;
-            document.getElementById("editCategory").value = product.category;
-            document.getElementById("editStock").value = product.stock;
-
-            // Show modal
-            const modal = new bootstrap.Modal(
-                document.getElementById("editProductModal"),
-            );
-            modal.show();
-        }
-    } catch (error) {
-        console.error("Error loading product:", error);
-        alert("Failed to load product data");
-    }
-};
 
 // ===== EDIT PRODUCT - Auto Slug =====
 document.getElementById("editName")?.addEventListener("input", function () {
@@ -553,6 +624,11 @@ document
         }
     });
 
+// ===== ORDER ACTIONS =====
+window.viewOrder = function (id) {
+    alert("View order: " + id);
+};
+
 // ===== UPDATE ORDER STATUS =====
 window.updateOrderStatus = async function (orderId, status) {
     const token = localStorage.getItem("token");
@@ -574,9 +650,7 @@ window.updateOrderStatus = async function (orderId, status) {
         const data = await response.json();
 
         if (data.success) {
-            // Show success message
             showToast(`Order status updated to ${status}`, "success");
-            // Reload orders
             loadOrders();
         } else {
             alert("❌ " + (data.message || "Failed to update order status"));
@@ -587,13 +661,21 @@ window.updateOrderStatus = async function (orderId, status) {
     }
 };
 
+// ===== USER ACTIONS =====
+window.deleteUser = function (id) {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    alert("Delete user: " + id);
+};
+
 // ===== SHOW TOAST NOTIFICATION =====
 function showToast(message, type = "success") {
     const toastContainer =
         document.getElementById("toastContainer") || createToastContainer();
 
     const toast = document.createElement("div");
-    toast.className = `toast show align-items-center text-white bg-${type === "error" ? "danger" : "success"} border-0`;
+    toast.className = `toast show align-items-center text-white bg-${
+        type === "error" ? "danger" : "success"
+    } border-0`;
     toast.role = "alert";
     toast.innerHTML = `
         <div class="d-flex">

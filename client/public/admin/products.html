@@ -59,6 +59,41 @@
           </button>
         </div>
 
+        <!-- Search & Filter Bar -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control" id="adminSearchInput" placeholder="Search products by name...">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select" id="adminCategoryFilter">
+              <option value="">All Categories</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Books">Books</option>
+              <option value="Home">Home</option>
+              <option value="Beauty">Beauty</option>
+              <option value="Sports">Sports</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="adminStockFilter">
+              <option value="">All Stock</option>
+              <option value="instock">In Stock (&gt; 0)</option>
+              <option value="outofstock">Out of Stock (0)</option>
+              <option value="lowstock">Low Stock (&lt; 10)</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-danger w-100" onclick="clearAdminFilters()">
+              <i class="fas fa-times me-1"></i>Clear Filters
+            </button>
+          </div>
+        </div>
+
         <!-- Products Table -->
         <div class="card shadow-sm">
           <div class="card-body">
@@ -69,6 +104,7 @@
                     <th>Image</th>
                     <th>Name</th>
                     <th>Price</th>
+                    <th>Reviews</th>
                     <th>Stock</th>
                     <th>Category</th>
                     <th>Actions</th>

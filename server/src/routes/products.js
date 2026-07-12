@@ -17,8 +17,35 @@ router.get("/", async (req, res) => {
         const limit = parseInt(req.query.limit) || 8;
         const skip = (page - 1) * limit;
 
-        const total = await Product.countDocuments();
-        const products = await Product.find()
+        // Build query
+        const query = {};
+
+        // Keyword search
+        if (req.query.keyword) {
+            query.$or = [
+                { name: { $regex: req.query.keyword, $options: "i" } },
+                { description: { $regex: req.query.keyword, $options: "i" } },
+            ];
+        }
+
+        // Category filter
+        if (req.query.category) {
+            query.category = req.query.category;
+        }
+
+        // Stock filters
+        if (req.query.minStock) {
+            query.stock = { $gte: parseInt(req.query.minStock) };
+        }
+        if (req.query.maxStock) {
+            query.stock = {
+                ...query.stock,
+                $lte: parseInt(req.query.maxStock),
+            };
+        }
+
+        const total = await Product.countDocuments(query);
+        const products = await Product.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
