@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
         loadOrders();
     } else if (path.includes("users.html")) {
         loadUsers();
+    } else if (path.includes("inventory.html")) {
+        loadInventory(1);
     }
 
     // Search on input
@@ -903,3 +905,196 @@ function renderStatusChart(statusDistribution) {
         },
     });
 }
+
+// ===== INVENTORY MANAGEMENT =====
+let inventoryPage = 1;
+const inventoryLimit = 10;
+let inventorySearch = "";
+let inventoryStockFilter = "";
+
+async function loadInventory(page = 1) {
+    inventoryPage = page;
+
+    const params = new URLSearchParams();
+    params.append("page", page);
+    params.append("limit", inventoryLimit);
+    if (inventorySearch) params.append("keyword", inventorySearch);
+    if (inventoryStockFilter === "instock") params.append("minStock", "1");
+    else if (inventoryStockFilter === "lowstock")
+        params.append("maxStock", "10");
+    else if (inventoryStockFilter === "outofstock")
+        params.append("maxStock", "0");
+
+    try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+            `${API_URL}/products?${params.toString()}`,
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            },
+        );
+        const data = await response.json();
+
+        const tbody = document.getElementById("inventoryTableBody");
+        if (!tbody) return;
+
+        // Update stats
+        const allProducts = await fetch(`${API_URL}/products`).then((r) =>
+            r.json(),
+        );
+        if (allProducts.success) {
+            const products = allProducts.products;
+            document.getElementById("totalProducts").textContent =
+                products.length;
+            document.getElementById("inStock").textContent = products.filter(
+                (p) => p.stock > 10,
+            ).length;
+            document.getElementById("lowStock").textContent = products.filter(
+                (p) => p.stock > 0 && p.stock <= 10,
+            ).length;
+            document.getElementById("outOfStock").textContent = products.filter(
+                (p) => p.stock === 0,
+            ).length;
+        }
+
+        if (!data.success || data.products.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4"><p class="text-muted">No products found</p></td></tr>`;
+            document.getElementById("inventoryPagination").innerHTML = "";
+            return;
+        }
+
+        tbody.innerHTML = data.products
+            .map(
+                (product) => `
+            <tr>
+                <td>
+                    <img src="${product.images && product.images.length > 0 ? "http://localhost:5000" + product.images[0] : "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3ENo%3C/text%3E%3C/svg%3E"}"  
+                         style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;">
+                    <span class="ms-2">${product.name}</span>
+                </td>
+                <td>Rs. ${product.price.toFixed(2)}</td>
+                <td><strong>${product.stock}</strong></td>
+                <td>
+                    <span class="badge bg-${product.stock > 10 ? "success" : product.stock > 0 ? "warning" : "danger"}">
+                        ${product.stock > 10 ? "✅ In Stock" : product.stock > 0 ? "⚠️ Low Stock" : "❌ Out of Stock"}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="openUpdateStock('${product._id}', '${product.name}', ${product.stock})">
+                        <i class="fas fa-edit"></i> Update Stock
+                    </button>
+                </td>
+            </tr>
+        `,
+            )
+            .join("");
+
+        // Pagination
+        const pagination = data.pagination;
+        const container = document.getElementById("inventoryPagination");
+        if (pagination.pages > 1) {
+            let html = `<ul class="pagination">`;
+            html += `<li class="page-item ${pagination.page === 1 ? "disabled" : ""}">
+                        <button class="page-link" onclick="loadInventory(${pagination.page - 1})">Previous</button>
+                    </li>`;
+            for (let i = 1; i <= pagination.pages; i++) {
+                html += `<li class="page-item ${i === pagination.page ? "active" : ""}">
+                            <button class="page-link" onclick="loadInventory(${i})">${i}</button>
+                        </li>`;
+            }
+            html += `<li class="page-item ${pagination.page === pagination.pages ? "disabled" : ""}">
+                        <button class="page-link" onclick="loadInventory(${pagination.page + 1})">Next</button>
+                    </li>`;
+            html += `</ul>`;
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = "";
+        }
+    } catch (error) {
+        console.error("Error loading inventory:", error);
+    }
+}
+
+// ===== OPEN UPDATE STOCK MODAL =====
+window.openUpdateStock = function (id, name, currentStock) {
+    document.getElementById("stockProductId").value = id;
+    document.getElementById("stockProductName").textContent = name;
+    document.getElementById("stockCurrentStock").textContent = currentStock;
+    document.getElementById("stockNewQuantity").value = currentStock;
+    const modal = new bootstrap.Modal(
+        document.getElementById("updateStockModal"),
+    );
+    modal.show();
+};
+
+// ===== UPDATE STOCK SUBMIT =====
+document
+    .getElementById("updateStockForm")
+    ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById("stockProductId").value;
+        const stock = parseInt(
+            document.getElementById("stockNewQuantity").value,
+        );
+
+        if (stock < 0) {
+            alert("Stock cannot be negative");
+            return;
+        }
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("Please login first");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/products/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ stock }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert("✅ Stock updated successfully!");
+                bootstrap.Modal.getInstance(
+                    document.getElementById("updateStockModal"),
+                ).hide();
+                loadInventory(inventoryPage);
+            } else {
+                alert("❌ " + (data.message || "Failed to update stock"));
+            }
+        } catch (error) {
+            console.error("Error updating stock:", error);
+            alert("❌ Network error. Please try again.");
+        }
+    });
+
+// ===== INVENTORY FILTERS =====
+function filterInventory() {
+    inventorySearch = document.getElementById("searchInventory")?.value || "";
+    inventoryStockFilter = document.getElementById("stockFilter")?.value || "";
+    loadInventory(1);
+}
+
+function clearInventoryFilters() {
+    document.getElementById("searchInventory").value = "";
+    document.getElementById("stockFilter").value = "";
+    inventorySearch = "";
+    inventoryStockFilter = "";
+    loadInventory(1);
+}
+
+// ===== INVENTORY EVENT LISTENERS =====
+document
+    .getElementById("searchInventory")
+    ?.addEventListener("input", filterInventory);
+document
+    .getElementById("stockFilter")
+    ?.addEventListener("change", filterInventory);
