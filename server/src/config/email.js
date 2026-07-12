@@ -105,7 +105,8 @@ const sendOrderConfirmation = async (order, user) => {
 
 // Order status update email
 const sendOrderStatusUpdate = async (order, user, oldStatus, newStatus) => {
-    const subject = `Order Status Updated #${order._id.slice(-6)}`;
+    const orderId = order._id.toString();
+    const subject = `Order Status Updated #${orderId.slice(-6)}`;
 
     const statusColors = {
         pending: "🟡",
@@ -119,7 +120,7 @@ const sendOrderStatusUpdate = async (order, user, oldStatus, newStatus) => {
         <p>Hi ${user.name},</p>
         <p>Your order status has been updated.</p>
         
-        <p><strong>Order ID:</strong> #${order._id.slice(-6)}</p>
+        <p><strong>Order ID:</strong> #${orderId.slice(-6)}</p>
         <p><strong>Old Status:</strong> ${statusColors[oldStatus] || ""} ${oldStatus}</p>
         <p><strong>New Status:</strong> ${statusColors[newStatus] || ""} ${newStatus}</p>
         <p><strong>Total:</strong> Rs. ${order.total.toFixed(2)}</p>

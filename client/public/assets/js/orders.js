@@ -37,37 +37,52 @@ async function loadUserOrders() {
 
         if (data.success && data.orders.length > 0) {
             container.innerHTML = data.orders
-                .map(
-                    (order) => `
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <h6 class="fw-bold">Order #${order._id.slice(-6)}</h6>
-                            <span class="badge bg-${order.status === "completed" ? "success" : order.status === "cancelled" ? "danger" : "warning"}">
-                                ${order.status || "pending"}
-                            </span>
-                        </div>
-                        <p class="text-muted small">${new Date(order.createdAt).toLocaleDateString()}</p>
-                        <hr>
-                        ${order.items
-                            .map(
-                                (item) => `
-                            <div class="d-flex justify-content-between">
-                                <span>${item.name} × ${item.quantity}</span>
-                                <span>$${(item.price * item.quantity).toFixed(2)}</span>
+                .map((order) => {
+                    // Check if order can be deleted (pending or completed)
+                    const canDelete =
+                        order.status === "pending" ||
+                        order.status === "completed";
+
+                    return `
+                            <div class="card mb-3 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="fw-bold">Order #${order._id.slice(-6)}</h6>
+                                        <span class="badge bg-${order.status === "completed" ? "success" : order.status === "cancelled" ? "danger" : "warning"}">
+                                            ${order.status || "pending"}
+                                        </span>
+                                    </div>
+                                    <p class="text-muted small">${new Date(order.createdAt).toLocaleDateString()}</p>
+                                    <hr>
+                                    ${order.items
+                                        .map(
+                                            (item) => `
+                                            <div class="d-flex justify-content-between">
+                                                <span>${item.name} × ${item.quantity}</span>
+                                                <span>Rs. ${(item.price * item.quantity).toFixed(2)}</span>
+                                            </div>
+                                        `,
+                                        )
+                                        .join("")}
+                                    <hr>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold">Total: Rs. ${order.total.toFixed(2)}</span>
+                                        ${
+                                            canDelete
+                                                ? `
+                                            <button class="btn btn-danger btn-sm" onclick="deleteOrder('${order._id}')">
+                                                <i class="fas fa-trash me-1"></i>Delete Order
+                                            </button>
+                                        `
+                                                : `
+                                            <span class="text-muted small">Cannot delete (${order.status})</span>
+                                        `
+                                        }
+                                    </div>
+                                </div>
                             </div>
-                        `,
-                            )
-                            .join("")}
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Total</span>
-                            <span>$${order.total.toFixed(2)}</span>
-                        </div>
-                    </div>
-                </div>
-            `,
-                )
+                        `;
+                })
                 .join("");
         } else {
             container.innerHTML = `
@@ -142,6 +157,47 @@ function checkAuthStatus() {
         `;
     }
 }
+
+// ===== DELETE ORDER =====
+window.deleteOrder = async function (orderId) {
+    if (
+        !confirm(
+            "Are you sure you want to delete this order? This action cannot be undone.",
+        )
+    ) {
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+        alert("Please login first");
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `http://localhost:5000/api/orders/${orderId}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            },
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert("✅ Order deleted successfully!");
+            loadUserOrders(); // Reload orders
+        } else {
+            alert("❌ " + (data.message || "Failed to delete order"));
+        }
+    } catch (error) {
+        console.error("Error deleting order:", error);
+        alert("❌ Network error. Please try again.");
+    }
+};
 
 // ===== LOGOUT =====
 function logout() {

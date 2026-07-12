@@ -43,6 +43,9 @@
 
   <section class="py-5">
     <div class="container">
+      <!-- 👇 Hidden container for pagination -->
+      <div id="productContainer" style="display: none;"></div>
+
       <h2 class="display-5 fw-bold mb-4">
         <i class="fas fa-shopping-bag me-2"></i>My Orders
       </h2>
@@ -62,6 +65,68 @@
       <p class="mb-0">&copy; 2026 KRM-Site. All rights reserved.</p>
     </div>
   </footer>
+
+  <!-- Modals -->
+  <!-- Login Modal -->
+  <div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-sign-in-alt me-2"></i>Login</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="loginForm">
+            <div class="mb-3">
+              <label class="form-label" for="loginEmail">Email</label>
+              <input type="email" class="form-control" id="loginEmail" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="loginPassword">Password</label>
+              <input type="password" class="form-control" id="loginPassword" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+          </form>
+          <p class="text-center mt-3">
+            Don't have an account? <a href="#" data-bs-toggle="modal" data-bs-target="#registerModal">Register</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Register</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="registerForm">
+            <div class="mb-3">
+              <label class="form-label" for="registerName">Name</label>
+              <input type="text" class="form-control" id="registerName" placeholder="Enter your name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="registerEmail">Email</label>
+              <input type="email" class="form-control" id="registerEmail" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="registerPassword">Password</label>
+              <input type="password" class="form-control" id="registerPassword"
+                placeholder="Enter your password (6+ characters)" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Register</button>
+          </form>
+          <p class="text-center mt-3">
+            Already have an account? <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Login</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/main.js"></script>

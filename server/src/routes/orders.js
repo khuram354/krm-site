@@ -153,4 +153,50 @@ router.put("/:id/status", protect, authorize("admin"), async (req, res) => {
     }
 });
 
+// @route   DELETE /api/orders/:id
+// @desc    Delete an order (User only - if pending or completed)
+// @access  Private
+router.delete("/:id", protect, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found",
+            });
+        }
+
+        // Check if user owns this order
+        if (order.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized to delete this order",
+            });
+        }
+
+        // Check if order can be deleted (pending or completed)
+        if (order.status !== "pending" && order.status !== "completed") {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete order with status: ${order.status}. Only pending or completed orders can be deleted.`,
+            });
+        }
+
+        await order.deleteOne();
+
+        res.json({
+            success: true,
+            message: "Order deleted successfully",
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+});
+
 module.exports = router;
